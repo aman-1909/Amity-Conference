@@ -1,13 +1,10 @@
 import streamlit as st
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import time
 
 st.set_page_config(page_title="Multi-Intersection AI Traffic System", layout="wide")
 
-st.title("🚦 Multi-Agent AI Adaptive Traffic Signal System")
+st.title("🚦 AI Enabled Traffic Signal System")
 
 # -----------------------
 # Sidebar Inputs
@@ -96,22 +93,3 @@ for t in range(cycle_time):
 
 st.success("Synchronized Cycle Completed")
 
-# -----------------------
-# Performance Curve
-# -----------------------
-
-st.subheader("📈 Adaptive Response Curve")
-
-x = np.linspace(0, 300, 50)
-
-fig = plt.figure()
-
-for i in range(num_intersections):
-    curve = [optimize_signal(v, lane_capacity, False)[0] for v in x]
-    plt.plot(x, curve)
-
-plt.xlabel("Vehicle Volume")
-plt.ylabel("Optimized Green Time")
-plt.title("Density-Based Signal Optimization")
-
-st.pyplot(fig)
