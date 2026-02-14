@@ -1,6 +1,5 @@
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 
 st.set_page_config(page_title="Research AI Traffic Simulator", layout="wide")
@@ -77,22 +76,7 @@ time.sleep(1)
 
 st.success("Cycle Completed")
 
-# -----------------------
-# Performance Graph
-# -----------------------
 
-st.subheader("📊 Traffic Performance Analysis")
-
-x = np.linspace(0, 300, 50)
-green_times = [optimize_signal(v, lane_capacity, False)[0] for v in x]
-
-fig = plt.figure()
-plt.plot(x, green_times)
-plt.xlabel("Vehicle Volume")
-plt.ylabel("Optimized Green Time (sec)")
-plt.title("Adaptive Signal Response Curve")
-
-st.pyplot(fig)
 
 # -----------------------
 # Multi Intersection Summary
