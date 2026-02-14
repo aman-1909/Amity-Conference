@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import time
 
 st.set_page_config(layout="wide")
-st.title("🚦 AI Smart Crossroad Traffic Simulation (Research Model)")
+st.title("🚦 AI Enabled Traffic Signal")
 
 # -----------------------
 # SIDEBAR CONTROLS
