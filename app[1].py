@@ -4,7 +4,7 @@ import time
 
 st.set_page_config(page_title="Research AI Traffic Simulator", layout="wide")
 
-st.title("🚦 Research-Level AI Adaptive Traffic Signal System")
+st.title("🚦 AI Adaptive Traffic Signal System")
 
 # -----------------------
 # Sidebar Inputs
