@@ -1,4 +1,7 @@
-import streamlit as st import numpy as np import matplotlib.pyplot as plt import matplotlib.animation as animation
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 st.set_page_config(layout="wide")
 
