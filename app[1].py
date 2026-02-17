@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="wide")
 
-st.title("🚦 AI Traffic Signal Simulator — 3 Road Intersection")
+st.title("🚦 AI Traffic Signal Simulator ")
 
 # -----------------------------
 # USER INPUT
