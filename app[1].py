@@ -5,19 +5,17 @@ st.set_page_config(page_title="AI Traffic Research Simulator", layout="wide")
 
 st.title("🚦 Research‑Grade AI Traffic Signal Simulator")
 
----------------- Sidebar Controls ----------------
+
 
 st.sidebar.header("Traffic Volume per Lane") north_vol = st.sidebar.slider("North Lane Volume", 0, 30, 10) south_vol = st.sidebar.slider("South Lane Volume", 0, 30, 10) west_vol = st.sidebar.slider("West Lane Volume", 0, 30, 10)
 
 emergency_lane = st.sidebar.selectbox( "Emergency Vehicle Lane", ["None", "North", "South", "West"] )
 
----------------- AI Timing Logic ----------------
 
 def compute_times(n, s, w, emergency): base = 3 scale = 0.4 times = { "North": base + n * scale, "South": base + s * scale, "West": base + w * scale } if emergency != "None": times[emergency] += 3 return times
 
 times = compute_times(north_vol, south_vol, west_vol, emergency_lane)
 
----------------- HTML Simulation ----------------
 
 html = f"""
 
