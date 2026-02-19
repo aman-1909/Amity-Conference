@@ -1,21 +1,10 @@
-"""
-Smart City AI Traffic Junction — Streamlit App
-==============================================
-Run with:  streamlit run app.py
-
-Requirements:
-    pip install streamlit
-
-Place traffic_sim_embed.html in the same directory as this file.
-"""
-
 import json
 import pathlib
 import streamlit as st
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Smart City AI Traffic Junction",
+    page_title="AL-Enabled Smart Traffic Light Signal",
     page_icon="🚦",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -319,24 +308,15 @@ with st.expander("📡 HOW IT WORKS", expanded=False):
 
     **ADAPTIVE SIGNAL TIMING**<br>
     Green phase duration scales linearly with traffic volume:
-    - Volume 1 → ~5 seconds green
-    - Volume 5 → ~11 seconds green
-    - Volume 10 → ~18 seconds green
+    - Traffic cameras capture real-time video at intersections.
+    - Computer Vision techniques are applied for vehicle detection and lane-wise counting.
+    - Machine Learning models analyze traffic density and predict optimal green signal duration.
+    - Emergency vehicles are identified using visual cues or priority signaling.
+    - The traffic signal controller dynamically updates signal phases in real time. 
 
-    **CYCLE SEQUENCE**<br>
-    North → South → West → repeat (with priority weighting)<br>
-    The road with the highest volume among candidates goes next.
 
-    **YELLOW PHASE**<br>
-    Always 2.5 seconds. Every green→red transition passes through yellow.
 
-    **EMERGENCY MODE**<br>
-    Dispatching an emergency vehicle interrupts the current phase,<br>
-    forces a yellow→red transition, then grants immediate green to the emergency road.
-
-    **STREAMLIT ↔ SIMULATION BRIDGE**<br>
-    Controls send a `postMessage` config payload into the HTML iframe.<br>
-    The simulation's `window.addEventListener('message', ...)` receives and applies it instantly.
+    
 
     </div>
     """, unsafe_allow_html=True)
