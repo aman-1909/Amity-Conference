@@ -3,7 +3,8 @@ import time
 
 st.set_page_config(page_title="Realistic Traffic Light", layout="centered")
 
-st.title("🚦 Realistic AI Traffic Signal") st.markdown("Ultra‑realistic synchronized traffic light simulation")
+st.title("🚦 Realistic AI Traffic Signal")
+st.markdown("Ultra‑realistic synchronized traffic light simulation")
 
 User controls
 
