@@ -237,7 +237,7 @@ inject_script = f"""
 st.markdown("""
 <div style="text-align:center;padding:4px 0 12px;font-family:'Courier New',monospace;
 font-size:0.65rem;letter-spacing:3px;color:rgba(0,229,255,0.5);">
-⬡ &nbsp; SMART CITY AI TRAFFIC JUNCTION &nbsp; ⬡ &nbsp; REAL-TIME SIGNAL OPTIMIZATION
+⬡ &nbsp; SMART CITY AI TRAFFIC SIGNAL &nbsp; ⬡ &nbsp; REAL-TIME SIGNAL OPTIMIZATION
 </div>
 """, unsafe_allow_html=True)
 
@@ -306,8 +306,6 @@ with st.expander("📡 HOW IT WORKS", expanded=False):
     st.markdown("""
     <div style="font-family:'Courier New',monospace;font-size:0.7rem;color:rgba(200,230,255,0.7);line-height:1.8;">
 
-    **ADAPTIVE SIGNAL TIMING**<br>
-    Green phase duration scales linearly with traffic volume:
     - Traffic cameras capture real-time video at intersections.
     - Computer Vision techniques are applied for vehicle detection and lane-wise counting.
     - Machine Learning models analyze traffic density and predict optimal green signal duration.
