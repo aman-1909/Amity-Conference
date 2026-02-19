@@ -1,4 +1,5 @@
-import streamlit as st import time
+import streamlit as st 
+import time
 
 st.set_page_config(page_title="Realistic Traffic Light", layout="centered")
 
