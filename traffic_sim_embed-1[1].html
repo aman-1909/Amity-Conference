@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Enabled Smart Traffic Light Signal</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:#ff2020; --yellow:#ffd700; --green:#00ff88;
+    --red-glow:rgba(255,32,32,0.7); --yellow-glow:rgba(255,215,0,0.7); --green-glow:rgba(0,255,136,0.7);
+    --accent:#00e5ff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;background:#020812;overflow:hidden;}
+  body{font-family:'Share Tech Mono',monospace;color:#c8e6ff;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+  /* ── Header strip ── */
+  .hdr{
+    width:100%;padding:8px 18px;
+    background:linear-gradient(90deg,#020812,#0a1628,#020812);
+    border-bottom:1px solid rgba(0,229,255,0.18);
+    display:flex;align-items:center;justify-content:space-between;
+    flex-shrink:0;
+  }
+  .hdr h1{font-family:'Orbitron',monospace;font-size:0.78rem;letter-spacing:3px;color:var(--accent);text-shadow:0 0 16px rgba(0,229,255,0.5);}
+  .hdr-right{display:flex;align-items:center;gap:16px;}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green-glow);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .status-txt{font-size:0.58rem;letter-spacing:2px;color:var(--green);}
+
+  /* ── Scene ── */
+  .scene-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:10px;}
+  .scene{position:relative;width:520px;height:520px;flex-shrink:0;}
+  .ground{position:absolute;inset:0;background:#0a0f1a;border-radius:6px;overflow:hidden;}
+  .ground::before{content:'';position:absolute;inset:0;
+    background-image:linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);
+    background-size:40px 40px;}
+
+  /* Roads */
+  .road-north,.road-south{position:absolute;left:50%;transform:translateX(-50%);width:130px;background:#1c1c2e;z-index:1;}
+  .road-north{top:0;height:calc(50% - 65px);}
+  .road-south{bottom:0;height:calc(50% - 65px);}
+  .road-west{position:absolute;top:50%;transform:translateY(-50%);height:130px;left:0;width:calc(50% - 65px);background:#1c1c2e;z-index:1;}
+  .ibox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:130px;height:130px;background:#1c1c2e;z-index:2;}
+
+  /* Lane marks */
+  .cv{position:absolute;left:50%;transform:translateX(-50%);width:3px;top:0;bottom:0;background:repeating-linear-gradient(to bottom,rgba(255,220,0,0.4) 0,rgba(255,220,0,0.4) 18px,transparent 18px,transparent 36px);}
+  .ch{position:absolute;top:50%;transform:translateY(-50%);height:3px;left:0;right:0;background:repeating-linear-gradient(to right,rgba(255,220,0,0.4) 0,rgba(255,220,0,0.4) 18px,transparent 18px,transparent 36px);}
+  .evl{position:absolute;left:9px;top:0;bottom:0;width:2px;background:rgba(255,255,255,0.09);}
+  .evr{position:absolute;right:9px;top:0;bottom:0;width:2px;background:rgba(255,255,255,0.09);}
+  .eht{position:absolute;top:9px;left:0;right:0;height:2px;background:rgba(255,255,255,0.09);}
+  .ehb{position:absolute;bottom:9px;left:0;right:0;height:2px;background:rgba(255,255,255,0.09);}
+
+  /* Crosswalks */
+  .cw{position:absolute;display:flex;z-index:3;}
+  .cws{background:rgba(255,255,255,0.13);margin:0 2px;}
+
+  /* Glows */
+  .road-glow{position:absolute;pointer-events:none;z-index:4;opacity:0;transition:opacity 0.7s;}
+  .road-glow.on{opacity:1;}
+
+  /* Direction labels */
+  .dlbl{position:absolute;font-family:'Orbitron',monospace;font-size:0.48rem;letter-spacing:3px;color:rgba(0,229,255,0.35);z-index:5;}
+
+  /* Data HUD */
+  .hud{position:absolute;bottom:8px;left:10px;z-index:15;font-size:0.52rem;color:rgba(0,229,255,0.45);letter-spacing:1px;line-height:1.7;}
+  .hud span{color:var(--accent);}
+
+  /* Emergency overlay */
+  .emg-ov{position:absolute;inset:0;z-index:20;pointer-events:none;border:2px solid transparent;border-radius:6px;transition:border-color 0.3s;}
+  .emg-ov.on{border-color:rgba(255,80,0,0.5);box-shadow:inset 0 0 40px rgba(255,80,0,0.07);animation:emgb 0.6s infinite alternate;}
+  @keyframes emgb{from{border-color:rgba(255,80,0,0.3)}to{border-color:rgba(255,80,0,0.85)}}
+
+  /* Traffic light */
+  .tl-wrap{position:absolute;z-index:10;}
+  .tl-pole{width:5px;background:linear-gradient(to right,#252535,#353545,#252535);border-radius:3px;}
+  .tl-arm{height:5px;background:linear-gradient(to bottom,#252535,#353545,#252535);border-radius:3px;position:absolute;}
+  .tl-box{
+    background:linear-gradient(135deg,#14141e 0%,#1e1e2e 50%,#14141e 100%);
+    border:1px solid #2a2a3a;border-radius:8px;padding:7px 5px;
+    display:flex;flex-direction:column;gap:5px;align-items:center;
+    box-shadow:2px 4px 16px rgba(0,0,0,0.9),inset 0 1px 0 rgba(255,255,255,0.04);
+    position:relative;
+  }
+  .tl-box::before{content:'';position:absolute;top:2px;left:3px;right:3px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent);}
+  .lens{width:20px;height:20px;border-radius:50%;position:relative;transition:background 0.35s,box-shadow 0.35s;border:1px solid rgba(0,0,0,0.6);}
+  .lens::after{content:'';position:absolute;top:3px;left:3px;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.18);}
+  .r-off{background:#3a0808;box-shadow:none;} .y-off{background:#2a2000;box-shadow:none;} .g-off{background:#001808;box-shadow:none;}
+  .r-on{background:var(--red);box-shadow:0 0 14px 4px var(--red-glow),0 0 30px 10px rgba(255,32,32,0.25);}
+  .y-on{background:var(--yellow);box-shadow:0 0 14px 4px var(--yellow-glow),0 0 30px 10px rgba(255,215,0,0.25);}
+  .g-on{background:var(--green);box-shadow:0 0 14px 4px var(--green-glow),0 0 30px 10px rgba(0,255,136,0.25);}
+
+  /* Stats footer */
+  .stats{
+    width:100%;display:flex;justify-content:center;gap:24px;
+    padding:7px 0;border-top:1px solid rgba(0,229,255,0.07);
+    font-size:0.56rem;color:rgba(200,230,255,0.4);letter-spacing:1px;flex-shrink:0;
+  }
+  .stat{display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .sv{font-family:'Orbitron',monospace;font-size:0.75rem;color:var(--accent);}
+  .sv.g{color:var(--green);} .sv.y{color:var(--yellow);} .sv.r{color:var(--red);}
+
+  .scanlines{position:fixed;inset:0;pointer-events:none;z-index:200;
+    background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,0.05) 3px,rgba(0,0,0,0.05) 4px);}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<!-- Header -->
+<div class="hdr">
+  <h1>⬡ AI-ENABLED SMART TRAFFIC LIGHT SIGNAL</h1>
+  <div class="hdr-right">
+    <div class="status-dot"></div>
+    <div class="status-txt" id="status-txt">ADAPTIVE MODE</div>
+  </div>
+</div>
+
+<!-- Scene -->
+<div class="scene-wrap">
+<div class="scene" id="scene">
+  <div class="ground">
+    <!-- Roads -->
+    <div class="road-north"><div class="cv"></div><div class="evl"></div><div class="evr"></div></div>
+    <div class="road-south"><div class="cv"></div><div class="evl"></div><div class="evr"></div></div>
+    <div class="road-west"><div class="ch"></div><div class="eht"></div><div class="ehb"></div></div>
+    <div class="ibox"></div>
+
+    <!-- Crosswalks North -->
+    <div class="cw" style="left:calc(50% - 65px);top:calc(50% - 76px);width:130px;height:13px;">
+      <div class="cws" style="width:11px;height:13px"></div><div class="cws" style="width:11px;height:13px"></div>
+      <div class="cws" style="width:11px;height:13px"></div><div class="cws" style="width:11px;height:13px"></div>
+      <div class="cws" style="width:11px;height:13px"></div><div class="cws" style="width:11px;height:13px"></div>
+      <div class="cws" style="width:11px;height:13px"></div>
+    </div>
+    <!-- Crosswalks South -->
+    <div class="cw" style="left:calc(50% - 65px);top:calc(50% + 63px);width:130px;height:13px;">
+      <div class="cws" style="width:11px;height:13px"></div><div class="cws" style="width:11px;height:13px"></div>
+      <div class="cws" style="width:11px;height:13px"></div><div class="cws" style="width:11px;height:13px"></div>
+      <div class="cws" style="width:11px;height:13px"></div><div class="cws" style="width:11px;height:13px"></div>
+      <div class="cws" style="width:11px;height:13px"></div>
+    </div>
+    <!-- Crosswalks West -->
+    <div class="cw" style="left:calc(50% - 76px);top:calc(50% - 65px);width:13px;height:130px;flex-direction:column;">
+      <div class="cws" style="height:11px;width:13px"></div><div class="cws" style="height:11px;width:13px"></div>
+      <div class="cws" style="height:11px;width:13px"></div><div class="cws" style="height:11px;width:13px"></div>
+      <div class="cws" style="height:11px;width:13px"></div><div class="cws" style="height:11px;width:13px"></div>
+      <div class="cws" style="height:11px;width:13px"></div>
+    </div>
+
+    <!-- Glows -->
+    <div class="road-glow" id="gn" style="left:calc(50% - 65px);top:0;width:130px;height:calc(50% - 65px);background:linear-gradient(to bottom,rgba(0,255,136,0.06),transparent)"></div>
+    <div class="road-glow" id="gs" style="left:calc(50% - 65px);top:calc(50% + 65px);width:130px;height:calc(50% - 65px);background:linear-gradient(to top,rgba(0,255,136,0.06),transparent)"></div>
+    <div class="road-glow" id="gw" style="top:calc(50% - 65px);left:0;width:calc(50% - 65px);height:130px;background:linear-gradient(to right,rgba(0,255,136,0.06),transparent)"></div>
+
+    <!-- Direction labels -->
+    <div class="dlbl" style="top:7px;left:50%;transform:translateX(-50%)">N</div>
+    <div class="dlbl" style="bottom:7px;left:50%;transform:translateX(-50%)">S</div>
+    <div class="dlbl" style="left:7px;top:50%;transform:translateY(-50%)">W</div>
+
+    <!-- HUD -->
+    <div class="hud">
+      MODE: <span id="hud-mode">ADAPTIVE</span><br>
+      PHASE: <span id="hud-phase">INIT</span> &nbsp; T: <span id="hud-timer">--</span>
+    </div>
+
+    <div class="emg-ov" id="emg-ov"></div>
+    <div id="vehicles"></div>
+  </div>
+
+  <!-- North light -->
+  <div class="tl-wrap" style="left:calc(50% + 68px);top:calc(50% - 128px)">
+    <div style="position:relative">
+      <div class="tl-arm" style="width:42px;right:0;top:26px"></div>
+      <div class="tl-box">
+        <div class="lens r-off" id="rn"></div>
+        <div class="lens y-off" id="yn"></div>
+        <div class="lens g-off" id="gn2"></div>
+      </div>
+      <div class="tl-pole" style="height:50px;margin:0 auto"></div>
+    </div>
+  </div>
+  <!-- South light -->
+  <div class="tl-wrap" style="left:calc(50% - 94px);top:calc(50% + 58px)">
+    <div style="position:relative">
+      <div class="tl-arm" style="width:42px;left:0;top:26px"></div>
+      <div class="tl-box">
+        <div class="lens r-off" id="rs"></div>
+        <div class="lens y-off" id="ys"></div>
+        <div class="lens g-off" id="gs2"></div>
+      </div>
+      <div class="tl-pole" style="height:50px;margin:0 auto"></div>
+    </div>
+  </div>
+  <!-- West light -->
+  <div class="tl-wrap" style="left:calc(50% - 143px);top:calc(50% - 105px)">
+    <div style="position:relative">
+      <div class="tl-box">
+        <div class="lens r-off" id="rw"></div>
+        <div class="lens y-off" id="yw"></div>
+        <div class="lens g-off" id="gw2"></div>
+      </div>
+      <div class="tl-pole" style="height:34px;margin:0 auto"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Stats bar -->
+<div class="stats">
+  <div class="stat"><div class="sv g" id="st-road">NORTH</div><div>ACTIVE ROAD</div></div>
+  <div class="stat"><div class="sv" id="st-timer">--</div><div>TIME LEFT</div></div>
+  <div class="stat"><div class="sv" id="st-phase">GREEN</div><div>PHASE</div></div>
+  <div class="stat"><div class="sv" id="st-cycles">0</div><div>CYCLES</div></div>
+  <div class="stat"><div class="sv" id="st-vehicles">0</div><div>VEHICLES</div></div>
+  <div class="stat"><div class="sv" id="st-mode">ADAPTIVE</div><div>MODE</div></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  SIGNAL ENGINE
+// ═══════════════════════════════════════════════
+const ROADS = ['north','south','west'];
+const YELLOW_DUR = 2500;
+const MIN_GREEN = 5000;
+const MAX_GREEN = 18000;
+
+let volumes = {north:5, south:5, west:5};
+let state = {green:null, phase:'green', phaseStart:0, phaseDur:0, emergency:null, emgHandled:false};
+let cycles = 0, phaseTimer = null;
+
+// Lens element map
+const LENSES = {
+  north: { r:'rn', y:'yn', g:'gn2' },
+  south: { r:'rs', y:'ys', g:'gs2' },
+  west:  { r:'rw', y:'yw', g:'gw2' },
+};
+const GLOWS = { north:'gn', south:'gs', west:'gw' };
+
+function greenDur(road){
+  return Math.round(MIN_GREEN + ((volumes[road]-1)/9)*(MAX_GREEN-MIN_GREEN));
+}
+
+function setLight(road, color){
+  const l = LENSES[road];
+  const colors = ['red','yellow','green'];
+  const ids    = [l.r, l.y, l.g];
+  const on     = ['r-on','y-on','g-on'];
+  const off    = ['r-off','y-off','g-off'];
+  ids.forEach((id,i)=>{
+    const el = document.getElementById(id);
+    if(el) el.className = `lens ${colors[i]===color ? on[i] : off[i]}`;
+  });
+  const gEl = document.getElementById(GLOWS[road]);
+  if(gEl) gEl.className = `road-glow ${color==='green'?'on':''}`;
+}
+
+function renderAll(){
+  ROADS.forEach(r => {
+    if(r===state.green) setLight(r, state.phase==='yellow'?'yellow':'green');
+    else setLight(r,'red');
+  });
+  updateHUD();
+}
+
+function updateHUD(){
+  const now = Date.now();
+  const rem = Math.max(0, state.phaseDur-(now-state.phaseStart));
+  const remS = (rem/1000).toFixed(1)+'s';
+  const mode = state.emergency ? 'EMERGENCY' : 'ADAPTIVE';
+  const phaseLabel = state.phase.toUpperCase();
+
+  document.getElementById('hud-mode').textContent  = mode;
+  document.getElementById('hud-phase').textContent = `${(state.green||'').toUpperCase()} ${phaseLabel}`;
+  document.getElementById('hud-timer').textContent  = remS;
+  document.getElementById('status-txt').textContent = state.emergency ? `🚨 EMERGENCY · ${state.emergency.toUpperCase()}` : 'ADAPTIVE MODE';
+
+  document.getElementById('st-road').textContent  = (state.green||'--').toUpperCase();
+  document.getElementById('st-road').className    = `sv ${state.phase==='green'?'g':state.phase==='yellow'?'y':'r'}`;
+  document.getElementById('st-timer').textContent = remS;
+  document.getElementById('st-phase').textContent = phaseLabel;
+  document.getElementById('st-phase').className   = `sv ${state.phase==='green'?'g':state.phase==='yellow'?'y':'r'}`;
+  document.getElementById('st-cycles').textContent  = cycles;
+  document.getElementById('st-vehicles').textContent = vehicles.length;
+  document.getElementById('st-mode').textContent   = mode;
+
+  // Post status back to Streamlit
+  try {
+    window.parent.postMessage({
+      type:'trafficStatus',
+      currentGreen: state.green,
+      phase: state.phase,
+      timeRemaining: Math.round(rem/1000),
+      cycleCount: cycles,
+      emergency: state.emergency,
+      vehicleCount: vehicles.length
+    }, '*');
+  } catch(e){}
+}
+
+function nextRoad(){
+  if(state.emergency && !state.emgHandled) return state.emergency;
+  const cands = ROADS.filter(r=>r!==state.green);
+  return cands.reduce((a,b)=>volumes[b]>volumes[a]?b:a);
+}
+
+function startGreen(road){
+  if(state.emergency===road) state.emgHandled=true;
+  state.green=road; state.phase='green';
+  state.phaseStart=Date.now();
+  state.phaseDur = (state.emergency && state.emgHandled && state.emergency===road)
+    ? greenDur(road)*0.6 : greenDur(road);
+  renderAll();
+  clearTimeout(phaseTimer);
+  phaseTimer=setTimeout(startYellow, state.phaseDur);
+}
+
+function startYellow(){
+  state.phase='yellow'; state.phaseStart=Date.now(); state.phaseDur=YELLOW_DUR;
+  renderAll();
+  clearTimeout(phaseTimer);
+  phaseTimer=setTimeout(startNext, YELLOW_DUR);
+}
+
+function startNext(){
+  state.phase='transition';
+  ROADS.forEach(r=>setLight(r,'red'));
+  clearTimeout(phaseTimer);
+  phaseTimer=setTimeout(()=>{ cycles++; startGreen(nextRoad()); }, 300);
+}
+
+setInterval(updateHUD, 150);
+
+// ── Vehicles ────────────────────────────────────
+let vehicles=[], vid=0;
+const COLORS=['#c0392b','#2980b9','#27ae60','#f39c12','#8e44ad','#16a085','#d35400','#1abc9c','#e74c3c'];
+const VC = document.getElementById('vehicles');
+
+function spawn(road){
+  const W=520,H=520,cx=W/2,cy=H/2;
+  const isE = state.emergency===road;
+  const color = isE ? '#ff5000' : COLORS[Math.floor(Math.random()*COLORS.length)];
+  const spd = isE ? 3.0 : 1.0+Math.random()*0.9;
+  let x,y,dx,dy,w,h;
+  if(road==='north'){x=cx+12+Math.random()*22;y=-20;dx=0;dy=spd;w=15;h=26;}
+  else if(road==='south'){x=cx-46+Math.random()*16;y=H+20;dx=0;dy=-spd;w=15;h=26;}
+  else{x=-20;y=cy-46+Math.random()*16;dx=spd;dy=0;w=26;h=15;}
+  const el=document.createElement('div');
+  el.style.cssText=`position:absolute;width:${w}px;height:${h}px;left:${x}px;top:${y}px;border-radius:3px;background:${color};z-index:8;box-shadow:${isE?'0 0 12px rgba(255,80,0,0.8)':'0 0 4px rgba(0,0,0,0.5)'};`;
+  if(isE) el.style.border='1px solid #ff8040';
+  const ws=document.createElement('div');
+  if(road==='north') ws.style.cssText='position:absolute;top:3px;left:2px;width:11px;height:6px;background:rgba(150,220,255,0.3);border-radius:2px;';
+  else if(road==='south') ws.style.cssText='position:absolute;bottom:3px;left:2px;width:11px;height:6px;background:rgba(150,220,255,0.3);border-radius:2px;';
+  else ws.style.cssText='position:absolute;left:3px;top:2px;width:6px;height:11px;background:rgba(150,220,255,0.3);border-radius:2px;';
+  el.appendChild(ws); VC.appendChild(el);
+  vehicles.push({el,x,y,dx,dy,road,stopped:false});
+}
+
+const STOP={north:{ax:'y',sv:520/2-77,dir:1},south:{ax:'y',sv:520/2+77-26,dir:-1},west:{ax:'x',sv:520/2-77,dir:1}};
+function atStop(v){const s=STOP[v.road];if(s.ax==='y')return s.dir===1?v.y+26>=s.sv:v.y<=s.sv;return v.x+26>=s.sv;}
+function oob(v){return v.x>560||v.x<-60||v.y>560||v.y<-60;}
+
+function tick(){
+  vehicles.forEach(v=>{
+    const lt=v.road===state.green?(state.phase==='yellow'?'yellow':'green'):'red';
+    if(lt==='red'&&atStop(v)) v.stopped=true;
+    else if(lt!=='red') v.stopped=false;
+    if(!v.stopped){const sm=lt==='yellow'?0.5:1;v.x+=v.dx*sm;v.y+=v.dy*sm;v.el.style.left=v.x+'px';v.el.style.top=v.y+'px';}
+  });
+  vehicles=vehicles.filter(v=>{if(oob(v)){v.el.remove();return false;}return true;});
+}
+setInterval(()=>{
+  ROADS.forEach(road=>{
+    const vol=volumes[road];
+    if(Math.random()<vol/10*0.35&&vehicles.filter(v=>v.road===road).length<vol+2) spawn(road);
+  });
+},1200);
+setInterval(tick,16);
+
+// ── postMessage API ─────────────────────────────
+window.addEventListener('message', function(e){
+  const d = e.data;
+  if(!d||typeof d!=='object') return;
+  if(d.type==='config'){
+    if(d.volumes) Object.assign(volumes, d.volumes);
+    if(d.emergency!==undefined){
+      if(d.emergency){
+        state.emergency=d.emergency; state.emgHandled=false;
+        document.getElementById('emg-ov').className='emg-ov on';
+        if(state.green!==d.emergency){clearTimeout(phaseTimer);startYellow();}
+      } else {
+        state.emergency=null; state.emgHandled=false;
+        document.getElementById('emg-ov').className='emg-ov';
+      }
+    }
+  }
+});
+
+// ── Init ────────────────────────────────────────
+ROADS.forEach(r=>setLight(r,'red'));
+setTimeout(()=>startGreen('north'), 500);
+</script>
+</body>
+</html>
